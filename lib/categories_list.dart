@@ -4,13 +4,18 @@ import 'package:task_manager/styles.dart';
 import 'package:task_manager/task.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+// Список категорий
 class CategoriesList extends StatefulWidget {
 
   Function(String) onCategoryChanged;
+  VoidCallback onCategoryDeleted;
   String? selectedCategory;
 
 
-  CategoriesList(this.selectedCategory, {Key? key, required this.onCategoryChanged}) : super(key: key);
+  CategoriesList({
+    required this.selectedCategory,
+    Key? key, required this.onCategoryChanged,
+    required this.onCategoryDeleted}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -19,6 +24,7 @@ class CategoriesList extends StatefulWidget {
 
 }
 
+// Состояние списка категорий
 class _CategoriesListState extends State<CategoriesList> {
   @override
   Widget build(BuildContext context) {
@@ -28,40 +34,144 @@ class _CategoriesListState extends State<CategoriesList> {
         itemCount: Data.categories.length + 1,
         itemBuilder: (context, index) {
           if (index == Data.categories.length) {
-            return addCategoryBtn(context);
+            return _addCategoryBtn(context);
           }
-          return buildCategory(context, Data.categories[index]);
+          return _buildCategory(context, Data.categories[index]);
         }
     );
   }
 
 
-  Widget buildCategory(BuildContext context, String category) {
-    return Container(
-      padding: const EdgeInsets.only(top: 50, left: 8, right: 8, ),
-      child: ElevatedButton(
-        style: categoryBtn(category == widget.selectedCategory),
-
-        child: Text((category == "no category") ? "all" : category),
-        onPressed: () => widget.onCategoryChanged(category)
+  // Виджет категории
+  Widget _buildCategory(BuildContext context, String category) {
+    return InkResponse(
+      // При удерживании появляется диалог действий с выбранной категорией
+      onLongPress: (category == "no category") ? null : () => _showCategoryBottomSheet(category),
+      child: Container(
+        padding: const EdgeInsets.only(top: 50, left: 8, right: 8, bottom: 20),
+        child: ElevatedButton(
+            style: categoryBtn(category == widget.selectedCategory),
+            child: Text((category == "no category") ? "all" : category),
+            onPressed: () => widget.onCategoryChanged(category)
+        ),
       ),
     );
-
   }
 
+  // Диалог действий с выбранной категорией
+  void _showCategoryBottomSheet(String category) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+            color: Colors.white,
+            height: 180,
+            child: Container(
+              child: _buildMenu(context, category),
+            ),
+          );
+        }
+    );
+  }
 
-  Widget addCategoryBtn(BuildContext context) {
+  // Меню диалога действий с выбранной категорией
+  Widget _buildMenu(BuildContext context, String category) {
+    return Column(
+      children: [
+        // Редактирование категории
+        ListTile(
+          leading: Icon(
+            Icons.edit,
+            color: AppColors.lightBlue,
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.edit,
+            style: defaultTxt(),
+          ),
+          onTap: () {
+            _showEditCategoryDialog(
+              context,
+              category,
+              onClosed: () => Navigator.pop(context)
+            );
+          }
+        ),
+        // Удаление категории
+        ListTile(
+          leading: Icon(
+            Icons.delete,
+            color: AppColors.red,
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.delete,
+            style: defaultTxt(),
+          ),
+          onTap: () {
+            Data.deleteCategory(category);
+            _setChanges();
+            widget.onCategoryDeleted();
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  // Диалог редактирования категории
+  void _showEditCategoryDialog(BuildContext context, String category, {required VoidCallback onClosed}) {
+    TextEditingController textController = TextEditingController();
+    textController.text = category;
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return AlertDialog(
+                  title: Text(AppLocalizations.of(context)!.edit),
+                  // Редактирование названия
+                  content: TextFormField(
+                    decoration: InputDecoration(
+                      border: UnderlineInputBorder(),
+                      labelText: AppLocalizations.of(context)?.edit,
+                      fillColor: AppColors.lightBlue,
+                    ),
+                    controller: textController,
+                    onChanged: (value) => setState(() {}),
+                  ),
+                  actions: [
+                    // Закрытие диалога
+                    TextButton(
+                      child: Text("Enter"),
+                      onPressed: textController.text.isEmpty? null : () {
+                        String newCategory = textController.text;
+                        Data.editCategory(category, newCategory);
+                        widget.onCategoryChanged(newCategory);
+                        _setChanges();
+                        Navigator.pop(context);
+                        onClosed();
+                      },
+                    )
+                  ],
+                );
+              }
+          );}
+    );
+  }
+
+  // Добавление категории
+  Widget _addCategoryBtn(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 50, left: 8, right: 8),
+      padding: const EdgeInsets.only(top: 50, left: 8, right: 8, bottom: 20),
       child: ElevatedButton(
         style: categoryBtn(false),
-        onPressed: () => showAddCategoryDialog(context),
+        onPressed: () => _showAddCategoryDialog(context),
         child: const Text("+"),
       ),
     );
   }
 
-  void showAddCategoryDialog(BuildContext context) {
+  // Диалог добавления категории
+  void _showAddCategoryDialog(BuildContext context) {
     TextEditingController textController = TextEditingController();
     showDialog(
         context: context,
@@ -69,6 +179,7 @@ class _CategoriesListState extends State<CategoriesList> {
         return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
+                // Ввод названия
                 title: Text(AppLocalizations.of(context)!.newCategory),
                 content: TextFormField(
                   decoration: InputDecoration(
@@ -80,17 +191,16 @@ class _CategoriesListState extends State<CategoriesList> {
                   onChanged: (value) => setState(() {}),
                 ),
                 actions: [
+                  // Закрытие диалога
                   TextButton(
-                    child: Text("Enter"),
                     onPressed: textController.text.isEmpty? null : () {
                       String newCategory = textController.text;
-                      if (!Data.categories.contains(newCategory)) {
-                        Data.categories.add(newCategory);
-                        Data.tasks[newCategory] = [];
-                      }
-                      setChanges();
+                      // Добавление категории
+                      Data.addCategory(newCategory);
+                      _setChanges();
                       Navigator.pop(context);
                     },
+                    child: Text(AppLocalizations.of(context)!.enter),
                   )
                 ],
               );
@@ -99,7 +209,8 @@ class _CategoriesListState extends State<CategoriesList> {
     );
   }
 
-  void setChanges() {
+  // Изменения состояния списка (для вызова из диалога)
+  void _setChanges() {
     setState(() {});
   }
 

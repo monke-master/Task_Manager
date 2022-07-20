@@ -9,9 +9,8 @@ class TasksList extends StatefulWidget{
   List<Task> tasks = [];
   List<Task> _activeTasks = [];
   List<Task> _completedTasks = [];
-  VoidCallback onListChanged;
 
-  TasksList(this._activeTasks, this._completedTasks, {required this.onListChanged});
+  TasksList(this._activeTasks, this._completedTasks);
 
   @override
   State<StatefulWidget> createState() {
@@ -38,108 +37,159 @@ class _TasksListState extends State<TasksList> {
         if (activeTasks.isEmpty) {
           index -= 1;
         } else if (index < activeTasks.length) {
-          return buildActiveTask(context, activeTasks[index]);
+          return _activeTaskContainer(context, activeTasks[index]);
         }
         if (index == -1) {
-          return emptyHeader(context);
+          return _emptyHeader(context);
         }
         if (index == activeTasks.length) {
-          return completedTasksHeader(context);
+          return _completedTasksHeader(context);
         }
-        return buildCompletedTask(context, completedTasks[index - activeTasks.length - 1]);
+        return _completedTaskContainer(context, completedTasks[index - activeTasks.length - 1]);
     }
     );
   }
 
   // List of active tasks
-  Widget buildActiveTask(BuildContext context, Task task) {
-    return InkResponse(
-        child: Container(
-          color: Colors.white,
-          margin: const EdgeInsets.only(bottom: 5, top: 5, left: 10, right: 10),
-          padding: const EdgeInsets.only(bottom: 10, top: 10),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.only(left: 5, right: 10),
-                child: IconButton(
-                  icon: SvgPicture.asset("res/assets/buttons/active.svg"),
-                  onPressed: () {
-                    Data.tasks[task.category]!.remove(task);
-                    task.complete = true;
-                    Data.tasks[task.category]!.add(task);
-                    widget.onListChanged();
-                  },
-                ),
-              ),
-              Text(
-                task.name!,
-                style: taskTxt(),
-              ),
-            ],
+  Widget _activeTaskContainer(BuildContext context, Task task) {
+    return GestureDetector(
+        child: Dismissible(
+          key: UniqueKey(),
+          direction: DismissDirection.endToStart,
+          onDismissed: (DismissDirection direction) {
+            setState(() {
+              Data.tasks[task.category]?.remove(task);
+                widget._activeTasks.remove(task);
+            });
+          },
+          background: Container(
+            color: AppColors.red,
+            child: const Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
           ),
+          child: _activeTaskWidget(context, task),
         ),
         onTap: () {
           // TODO
           // Make page with task's information
-        }
+        },
+    );
+  }
+
+  Widget _activeTaskWidget(BuildContext context, Task task) {
+    return Container(
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 5, top: 5, left: 10, right: 10),
+      padding: const EdgeInsets.only(bottom: 10, top: 10),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.only(left: 5, right: 10),
+            child: IconButton(
+              icon: SvgPicture.asset("res/assets/buttons/active.svg"),
+              onPressed: () {
+                setState(() {
+                  widget._activeTasks.remove(task);
+                  Data.tasks[task.category]!.remove(task);
+                  task.completed = true;
+                  Data.tasks[task.category]!.add(task);
+                  widget._completedTasks.add(task);
+                });
+              },
+            ),
+          ),
+          Text(
+            task.name!,
+            style: defaultTxt(),
+          ),
+        ],
+      ),
     );
   }
 
   // Completed tasks header
-  Widget completedTasksHeader(BuildContext context) {
+  Widget _completedTasksHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(top: 20, bottom: 20, left: 10),
       child: Text(
         AppLocalizations.of(context)!.completedTasks,
-        style: taskTxt(),
+        style: defaultTxt(),
       )
     );
   }
 
-  // List of completed tasks
-  Widget buildCompletedTask(BuildContext context, Task task) {
-    return InkResponse(
-      child: Container(
-        color: Colors.white,
-        margin: const EdgeInsets.only(bottom: 5, top: 5, left: 10, right: 10),
-        padding: const EdgeInsets.only(bottom: 10, top: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.only(left: 5, right: 10),
-              child: IconButton(
-                icon: SvgPicture.asset("res/assets/buttons/completed.svg"),
-                onPressed: () {
-                  Data.tasks[task.category]!.remove(task);
-                  task.complete = false;
-                  Data.tasks[task.category]!.add(task);
-                  widget.onListChanged();
-                },
-              )
-            ),
-            Text(
-              task.name!,
-              style: completedTaskTxt(),
-            ),
-          ],
+  Widget _completedTaskContainer(BuildContext context, Task task) {
+    return GestureDetector(
+      child: Dismissible(
+        key: UniqueKey(),
+        direction: DismissDirection.endToStart,
+        onDismissed: (DismissDirection direction) {
+          setState(() {
+            Data.tasks[task.category]?.remove(task);
+            widget._completedTasks.remove(task);
+          });
+        },
+        background: Container(
+          color: Colors.red,
+          child: const Icon(
+            Icons.delete,
+            color: Colors.white,
+          ),
         ),
+        child: _completedTaskWidget(context, task),
       ),
       onTap: () {
         // TODO
         // Make page with task's information
-      }
+      },
     );
   }
 
+
+  // List of completed tasks
+  Widget _completedTaskWidget(BuildContext context, Task task) {
+    return Container(
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 5, top: 5, left: 10, right: 10),
+      padding: const EdgeInsets.only(bottom: 10, top: 10),
+      child: Row(
+        children: [
+          Container(
+              padding: EdgeInsets.only(left: 5, right: 10),
+              child: IconButton(
+                icon: SvgPicture.asset("res/assets/buttons/completed.svg"),
+                onPressed: () {
+                  setState(() {
+                    widget._activeTasks.add(task);
+                    Data.tasks[task.category]!.remove(task);
+                    task.completed = false;
+                    widget._completedTasks.remove(task);
+                    Data.tasks[task.category]!.add(task);
+                  });
+                },
+              )
+          ),
+          Text(
+            task.name!,
+            style: completedTaskTxt(),
+          ),
+        ],
+      ),
+    );
+
+  }
+
+
   // Empty header if there is no any active tasks
-  Widget emptyHeader(BuildContext context) {
+  Widget _emptyHeader(BuildContext context) {
     return Container(
       alignment: Alignment.center,
         padding: EdgeInsets.only(top: 20, bottom: 20, left: 10, right: 10),
         child: Text(
           AppLocalizations.of(context)!.noTasks,
-          style: taskTxt(),
+          style: defaultTxt(),
           textAlign: TextAlign.center,
         )
     );

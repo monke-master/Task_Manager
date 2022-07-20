@@ -62,17 +62,18 @@ class _HomeState extends State<Home> {
 
   Widget build(BuildContext context) {
     return Scaffold(
-      body: MainPage(),
+      body: CategoryPage(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showTaskDialog(),
+        key: const Key("addTaskBtn"),
+        onPressed: () => showAddTaskDialog(),
         backgroundColor: AppColors.lightBlue,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  // Creating new task dialog
-  void showTaskDialog() {
+  // Диалог для создания новой задачи
+  void showAddTaskDialog() {
     List<String> categories = [];
     categories.addAll(Data.categories);
     TextEditingController textController = TextEditingController();
@@ -82,7 +83,7 @@ class _HomeState extends State<Home> {
           return StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return AlertDialog(
-                  // Input the task's name
+                  // Ввод названия задачи
                   content: TextFormField(
                     decoration: InputDecoration(
                       border: const UnderlineInputBorder(),
@@ -90,12 +91,16 @@ class _HomeState extends State<Home> {
                       fillColor: AppColors.lightBlue,
                     ),
                     controller: textController,
+                    // Изменение состояния диалога после изменения вводимого текста
                     onChanged: (value) => setState(() {}),
+                    key: Key("taskNameField"),
                   ),
                   actions: [
                     Container(
-                      padding: EdgeInsets.only(right: 70),
+                      padding: const EdgeInsets.only(right: 70),
+                      // Список категорий
                       child: DropdownButton(
+                        key: Key("categoriesDropdownBtn"),
                         value: widget._newTaskCategory,
                         items: Data.categories.map<DropdownMenuItem<String>>((String value) {
                           return DropdownMenuItem(
@@ -108,20 +113,18 @@ class _HomeState extends State<Home> {
                             setState(() => widget._newTaskCategory = value!),
                       ),
                     ),
-                    // Enter button
+                    // Закрытие диалога и добавление задачи (с проверкой на пустой ввод)
                     TextButton(
                       style: TextButton.styleFrom(
                         primary: AppColors.lightBlue
                       ),
                       onPressed: textController.text.isEmpty ? null : ()  {
-                          Data.tasks[widget._newTaskCategory]!.insert(
-                              0,
-                              Task(textController.text, widget._newTaskCategory));
-                          setChanges();
+                          Data.addTask(textController.text, widget._newTaskCategory);
+                          _setChanges();
                           Navigator.pop(context);
                       },
-                      child: Text("Enter"),
-
+                      key: Key("enterBtn"),
+                      child: Text(AppLocalizations.of(context)!.enter),
                     ),
                   ],
                 );
@@ -131,44 +134,53 @@ class _HomeState extends State<Home> {
       );
   }
 
-  void setChanges() {
+  // Изменение состояния домашней страницы
+  void _setChanges() {
     setState(() {});
   }
+
+
 }
 
-
-class MainPage extends StatefulWidget {
+// Страница категории
+class CategoryPage extends StatefulWidget {
 
   String _category = "no category";
 
 
   @override
   State<StatefulWidget> createState() {
-    return _MainPageState();
+    return _CategoryPageState();
   }
 
 }
 
-class _MainPageState extends State<MainPage> {
+// Состояние страницы категории
+class _CategoryPageState extends State<CategoryPage> {
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Список категорий
         SizedBox(
           width: double.infinity,
-          height: 80,
-          child: CategoriesList(widget._category, onCategoryChanged: (String category) =>
+          height: 100,
+          child: CategoriesList(
+            selectedCategory: widget._category,
+            onCategoryChanged: (String category) =>
               setState(() => widget._category = category),
+            onCategoryDeleted: () => setState(() {
+              widget._category = "no category";
+            }),
           ),
         ),
+        // Список задач выбранной категории
         Expanded(
-          child: CategoryPage(widget._category)),
+          child: TaskListPage(widget._category)),
       ],
     );
   }
-
-
 
 }
 

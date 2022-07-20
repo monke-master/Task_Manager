@@ -5,50 +5,44 @@ import 'package:task_manager/task_list.dart';
 
 
 
-// Page with tasks of selected category
-class CategoryPage extends StatefulWidget {
+// Страница задач выбранной категории
+class TaskListPage extends StatefulWidget {
   String? _category;
 
-  CategoryPage(this._category, {Key? key}) : super(key: key);
+  TaskListPage(this._category, {Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return _CategoryPageState();
+    return _TaskListPageState();
   }
 
 }
 
-class _CategoryPageState extends State<CategoryPage> {
+// Состояние страницы задач выбранной категории
+class _TaskListPageState extends State<TaskListPage> {
 
   @override
   Widget build(BuildContext context) {
     String category = widget._category!;
-    // Getting task from selected category
-    List<Task> tasks = [];
-    if (category == "no category") {
-      for (String cat in Data.tasks.keys) {
-        tasks.addAll(Data.tasks[cat]!);
-      }
-    } else {
-      tasks.addAll(Data.tasks[category]!);
-    }
-    // Sorting task for active and completed
+    // Получение задач выбранной категории
+    List<Task> tasks = Data.getTasks(category);
+    // Сортировка на активные/выполненные
     List<Task> activeTasks = [];
     List<Task> completedTask = [];
     for (Task task in tasks) {
-      if (task.complete) {
+      if (task.completed) {
         completedTask.add(task);
       } else {
         activeTasks.add(task);
       }
     }
-    // Creating Task Lists
-    return Column(children: [
-      Expanded(
-          child: TasksList(activeTasks, completedTask, onListChanged: () => setState(() {}),)
-      ),
-
-    ],
+    // Вывод списка
+    return Column(
+      children: [
+        Expanded(
+            child: TasksList(activeTasks, completedTask)
+        ),
+      ],
     );
   }
 

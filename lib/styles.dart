@@ -1,11 +1,12 @@
-
-
 import 'package:flutter/material.dart';
+
+// Цвета приложения и стили виджетов
 
 class AppColors {
   static Color lightBlue = const Color.fromARGB(255, 0, 128, 255);
   static Color blue = const Color.fromARGB(255, 0, 87, 173);
-  static Color gray = const Color.fromARGB(255, 108, 108, 108);
+  static Color gray = const Color.fromARGB(255, 108, 108, 108); 
+  static Color red = const Color.fromARGB(255, 254, 0, 0);
 }
 
 
@@ -29,7 +30,7 @@ ButtonStyle categoryBtn(bool selected) {
   );
 }
 
-TextStyle taskTxt() {
+TextStyle defaultTxt() {
   return const TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.bold
